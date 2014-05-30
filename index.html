@@ -75,17 +75,18 @@
             <h3 class="fragment roll-in"> Oh and also in GIS </h3>
           </p>
         </section>
-        <section>
-          <h2> Some Python tools </h2>
+        <section data-background-transition="slide" data-background="media/cartopy.png" style="background: rgba(0,129,195,.6); color: white" id="presentable" class="bookend">
+          <h2> Some Python GIS tools </h2>
           <ul>
             <li class="fragment highlight-green"> PyProj </li>
             <li class="fragment highlight-green"> Fiona/Rasterio </li>
             <li class="fragment highlight-green"> Shapely </li>
             <li> Arcpy </li>
             <li> PySAL </li>
-            <li> QGiS </li>
+            <li> QGIS </li>
             <li> Matplotlib/Basemap </li>
             <li> Cartopy </li>
+            <li> Numpy/Scipy Ecosystem</li>
           </ul>
         </section>
       </section>
@@ -94,10 +95,19 @@
           Projections
         </section>
         <section>
-          PyProj (PROJ.4)
+          <h2>PyProj (PROJ.4)</h2>
+          <ul>
+            <li>generalized projection engine</li>
+            <li>projections determined by: proj4 string or EPSG number</li>
+            <li>UTM14 
+<pre><code>EPSG number: 32614
+proj4 string: '+proj=utm +zone=14 +ellps=WGS84 +datum=WGS84 +units=m +no_defs'</code></pre>
+            </li>
+            <li>http://spatialreference.org, http://www.epsg-registry.org/</li>
+          </ul>
         </section>
         <section>
-          Read csv data from url and project Travis County Cities to UTM 15
+          <p>Read csv data from url and project Travis County Cities to UTM14</p>
           <pre><code>"""
 url - http://goo.gl/WFylXY
 data format: 
@@ -113,8 +123,8 @@ data = pd.read_csv(url)
 travis_cities = data[data['county']=='Travis']
 lons = travis_cities['longitude'].values
 lats = travis_cities['latitude'].values
-utm15 = pyproj.Proj("+init=EPSG:26915")
-x, y = utm15(lons, lats)
+utm14 = pyproj.Proj("+init=EPSG:32614")
+travis_cities['utm_x'], travis_cities['utm_y'] = utm14(lons, lats)
           </code></pre>
         </section>
       </section>
@@ -146,6 +156,43 @@ with collection("zipcodes.shp", "w", "ESRI Shapefile", schema) as output:
         })
           </code></pre>
         </section>
+        <section>
+        <h4>ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/1/</h4>
+        <pre><code>print 'Downloading tiles needed for requested bounding box:'
+raster_tiles = []
+tiles = _tile_urls(layer, xmin, ymin, xmax, ymax)
+for i, url in enumerate(tiles):
+    filename = os.path.split(url)[-1]
+    zip_path = os.path.join(path, layer_dict[layer], 'zip', filename)
+
+    print '... downloading tile %s of %s from %s' % (i+1, len(tiles), url)
+    util.download_if_new(url, zip_path, check_modified=True)
+    print '... ... zipfile saved at %s' % zip_path
+    tile_path = zip_path.replace('/zip', '')
+    raster_tiles.append(_extract_raster_from_zip(zip_path, tile_path))
+
+print 'Mosaic and clip to bounding box extents'
+tile_path = os.path.split(tile_path)[0]
+print subprocess.check_output(['gdalbuildvrt', '-te', repr(xmin), repr(ymin), repr(xmax), repr(ymax), output_path] + raster_tiles)
+return output_path
+        </code></pre>
+        </section>
+        <section>
+        <pre><code>xmin, xmax, ymin, ymax = (-79.68433821243661, -77.42742156945509, 
+        32.81417227179455, 34.998064728936754)
+filename = get_raster('1 arc-second', xmin, ymin, xmax, ymax)
+with rasterio.drivers():
+    with rasterio.open(fname) as src:
+        dem = src.read_band(1)
+        ndv = src.nodatavals
+dem[dem==ndv] = np.nan
+plt.imshow(dem)
+plt.savefig('dem.png')
+        </code></pre>
+        </section>
+        <section>
+          <img src="media/dem.png">
+        </section>
       </section>
       <section>
         <section data-background-transition="slide" data-background="media/lego_globe.jpg" style="background: rgba(0,129,195,.6); color: white" id="presentable" class="bookend">
@@ -173,10 +220,11 @@ with collection("zipcodes.shp", "w", "ESRI Shapefile", schema) as output:
       </section>
       <section>
         <img src="media/sliderule.jpg">
-        <h2 class="fragment roll-in"> Wean yourself from GUI reliance, Start Coding! </h2>
+        <h2 class="fragment roll-in">Wean yourself from GUI reliance <br> Start Coding! </h2>
       </section>
       <section data-background-transition="slide" data-background="media/recent_conditions_bw.png" style="background: rgba(0,129,195,.6); color: white" id="presentable" class="bookend">
         <h2> Questions? </h2>
+        <p>dharhas@gmail.com</p>
       </section>
     </div>
   </div>
